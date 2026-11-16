@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1730" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Offline pomocník rozhodcu: skóre, podanie, rotácie, time-outy a striedania." />
+  
+  
+  <title>VOLLEY REF · Rozhodca 2.2</title>
+  <style>
+    :root { color-scheme: dark; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      --bg:#071326;--surface:#0f203d;--surface2:#142b4d;--border:#2a466a;--txt:#f3f7ff;--muted:#a6b9d4;
+      --blue:#5aaafc;--orange:#ffb05f;--green:#6ce5b5;--red:#ff7d91;--yellow:#ffd26e;
+      --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+    }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse 120% 65% at 50% -15%,#18345e 0%,var(--bg) 58%);min-height:100vh;color:var(--txt);-webkit-tap-highlight-color:transparent}
+    button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.42;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+    .app{max-width:640px;margin:0 auto;padding:calc(12px + var(--safe-top)) 12px calc(102px + var(--safe-bottom))}
+    header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+    .brand{display:flex;gap:10px;align-items:center}.brand-icon{background:#2b4e7b;border:1px solid #4f80b0;width:42px;height:42px;display:grid;place-items:center;border-radius:13px;font-size:24px}
+    .brand h1{font-size:19px;line-height:1;margin:0;font-weight:850;letter-spacing:.5px}.brand small{display:block;font-size:11px;letter-spacing:.55px;color:var(--muted);margin-top:5px}
+    .tools{display:flex;gap:7px}.iconbtn{background:var(--surface);border:1px solid var(--border);color:var(--txt);border-radius:12px;min-width:42px;height:42px;padding:0 10px;display:grid;place-items:center;font-size:20px}
+    .topstrip{background:#102340;border:1px solid var(--border);border-radius:16px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}
+    .topstrip .sets{display:flex;align-items:center;gap:10px;font-size:13px}.settag{background:#234a7c;color:white;border:1px solid #5a8cbe;border-radius:9px;padding:7px 9px;font-size:13px;font-weight:800;white-space:nowrap}
+    .setscore{font-size:20px;font-weight:850;letter-spacing:2px;white-space:nowrap}.subtext{font-size:11px;color:var(--muted)}
+    .notice{border:1px solid #5274a0;background:#172e51;border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.45;color:#dce9ff;margin:0 0 11px}
+    .notice.success{border-color:#2d9d81;background:#103b34;color:#bdf7df}.notice.warn{border-color:#ba8a3c;background:#413218;color:#ffe2ad}
+    .scoregrid,.statsgrid,.courtsgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .scorecard{--accent:var(--blue);background:linear-gradient(150deg,#153a66,#112b4f);border:1px solid #386b9f;border-radius:17px;min-width:0;padding:12px 10px 10px;text-align:center;position:relative}
+    .scorecard.orange{--accent:var(--orange);background:linear-gradient(150deg,#513218,#30241a);border-color:#805633}
+    .scorecard.serving{box-shadow:inset 0 0 0 1px var(--accent)}
+    .scorecard .teamname{font-size:15px;font-weight:850;min-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .servepill{font-size:10px;line-height:18px;letter-spacing:.2px;color:var(--muted);height:20px;margin-top:3px;white-space:nowrap;overflow:hidden}
+    .servepill.on{color:var(--green);font-weight:900}
+    .score{font-size:clamp(65px,18vw,106px);line-height:1.03;font-variant-numeric:tabular-nums;letter-spacing:-4px;font-weight:900;margin:9px 0;color:white}
+    .pointbtn{width:100%;border:0;border-radius:12px;color:#081729;background:var(--accent);padding:15px 5px;font-weight:900;font-size:18px;min-height:58px;box-shadow:0 4px 0 #0002}
+    .pointbtn:active,.actionbtn:active{transform:translateY(1px)}
+    .section-head{display:flex;align-items:center;justify-content:space-between;margin:16px 1px 8px;font-weight:800;font-size:14px;letter-spacing:.25px}.section-head .hint{font-size:11px;font-weight:500;color:var(--muted)}
+    .statcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px;min-width:0}
+    .stathead{display:flex;justify-content:space-between;align-items:center;gap:3px;font-size:12px;color:var(--muted);margin:3px 0 6px}
+    .counter{font-size:17px;color:var(--txt);font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}.limit{color:var(--muted);font-weight:500}
+    .dots{display:flex;gap:4px;margin:0 0 9px;height:7px}.dots span{height:7px;border-radius:7px;flex:1;background:#29456a}.dots .filled.blue{background:var(--blue)}.dots .filled.orange{background:var(--orange)}
+    .actionbtn{width:100%;background:#244c77;border:1px solid #426c95;border-radius:10px;color:white;min-height:40px;font-size:12px;font-weight:850;letter-spacing:.1px}
+    .statrow{margin-top:12px}.statrow:first-child{margin-top:0}
+    .court{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:9px 8px 11px;min-width:0}
+    .courttitle{display:flex;justify-content:space-between;align-items:center;font-weight:900;font-size:12px;gap:3px;white-space:nowrap;margin:0 0 8px}
+    .courttitle .team-lbl{overflow:hidden;text-overflow:ellipsis}.court-serve{font-size:10px;color:var(--green);font-weight:800}
+    .net{height:5px;border-radius:99px;background:linear-gradient(90deg,#a2bfdc,#edf6ff,#a2bfdc);margin:0 5px 12px;position:relative}
+    .net::after{content:"SIEŤ";position:absolute;font-size:9px;letter-spacing:1px;color:#9cb0c7;top:-11px;left:50%;transform:translateX(-50%)}
+    .positions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+    .position{border:1px solid #36537a;border-radius:10px;min-width:0;min-height:63px;background:#1a3256;display:flex;align-items:center;flex-direction:column;justify-content:center;padding:2px 0;position:relative}
+    .position .posno{font-size:9px;color:#9fb2d0;position:absolute;left:6px;top:4px}
+    .position .jersey{font-size:23px;line-height:1.1;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+    .position .smallmark{font-size:9px;position:absolute;right:3px;top:3px;background:#ffce6c;color:#221b08;border-radius:4px;padding:0 3px;font-weight:900}
+    .position.serving-position{border-color:#50e6b8;background:#133e45}
+    .position .servemark{position:absolute;bottom:2px;font-size:8px;color:#72e8be}
+    .courtfoot{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:10px;margin:8px 1px 0;gap:4px}
+    .footer{position:fixed;bottom:0;left:0;right:0;background:#0b1931f5;border-top:1px solid #35506e;backdrop-filter:blur(12px);z-index:10;padding:9px max(12px,calc((100% - 616px)/2)) calc(9px + var(--safe-bottom));display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:8px}
+    .footer button{min-height:48px;border-radius:11px;background:#203c60;color:white;border:1px solid #3b6088;font-size:12px;font-weight:800;padding:5px}
+    .footer button.primary{background:#6ce5b5;border-color:#6ce5b5;color:#0b2730}
+    .footer button.outline{background:#10203a;color:#d4e3f7}
+    .logline{background:#0d203d;border-left:3px solid #548cbb;padding:11px;border-radius:4px 10px 10px 4px;font-size:12px;color:#bed2e9;margin-top:12px;min-height:38px}
+    .bottominfo{margin:12px 4px 0;color:#7893b3;text-align:center;font-size:10px;line-height:1.5}
+    .overlay{position:fixed;inset:0;background:#000b;z-index:30;display:none;align-items:flex-end;justify-content:center}.overlay.shown{display:flex}
+    .modal{width:100%;max-width:620px;max-height:min(92dvh,1000px);background:#10213b;border:1px solid #3a587a;border-radius:20px 20px 0 0;box-shadow:0 -6px 50px #0009;display:flex;flex-direction:column;overflow:hidden}
+    .modal-top{padding:16px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);gap:12px}
+    .modal-top h2{margin:0;font-size:18px}.xbtn{width:35px;height:35px;background:#294464;border:0;color:white;border-radius:9px;font-size:23px}
+    .modal-body{padding:15px 16px;overflow-y:auto;overscroll-behavior:contain}.modal-actions{display:flex;gap:9px;padding:12px 16px calc(14px + var(--safe-bottom));border-top:1px solid var(--border);background:#112441}
+    .modal-actions button{flex:1;border:1px solid #45678a;min-height:48px;border-radius:11px;background:#244467;color:white;font-weight:850}
+    .modal-actions .submit{background:var(--green);border-color:var(--green);color:#072722}
+    .field{display:flex;flex-direction:column;gap:5px;margin:0 0 10px;min-width:0}.field label{font-size:11px;color:#bbcbe0;font-weight:800}.field input,.field select{padding:10px 9px;width:100%;min-height:43px;border:1px solid #527092;border-radius:9px;background:#0a1a31;color:#fff;font-size:16px}
+    .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.teamsetup{border:1px solid #335476;background:#122b4a;padding:10px;border-radius:11px;min-width:0}
+    .teamsetup h3{font-size:13px;margin:2px 0 10px}.lineupgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.lineupgrid .field{margin:0}.lineupgrid input{text-align:center;padding:9px 1px;font-weight:800}
+    .help{font-size:12px;line-height:1.5;color:#bbcee7;margin:8px 0 13px}.info{color:var(--muted);font-size:11px;line-height:1.55}
+    .fieldset{padding:11px 0 0;border-top:1px solid #355171;margin-top:13px}.fieldset h3{margin:0 0 9px;font-size:13px}.checkrow{display:flex;align-items:center;gap:10px;font-size:12px;margin:9px 0;color:#dbe8fc}.checkrow input{width:18px;height:18px}
+    .message{padding:9px 10px;border-radius:9px;border:1px solid #ad7f45;background:#49351d;color:#ffe6b4;font-size:12px;line-height:1.5;margin:10px 0}
+    #toast{position:fixed;left:50%;transform:translateX(-50%) translateY(15px);bottom:calc(100px + var(--safe-bottom));z-index:50;width:max-content;max-width:calc(100vw - 24px);background:#e5f2ff;color:#112b43;padding:11px 15px;border-radius:13px;box-shadow:0 8px 26px #0008;font-weight:800;font-size:13px;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;text-align:center}
+    #toast.shown{opacity:1;transform:translateX(-50%) translateY(0)}
+    .hidden{display:none!important}.pill{display:inline-block;padding:3px 7px;border-radius:20px;background:#244a74;color:#d9eaff;font-size:11px;font-weight:800}
+    .litebtn{background:#213c60;border:1px solid #426489;color:#fff;border-radius:9px;min-height:38px;padding:7px 11px;font-size:12px;font-weight:750}
+    .rules-table{width:100%;border-collapse:collapse;font-size:12px}.rules-table td{padding:7px 5px;border-bottom:1px solid var(--border)}
+    @media (min-width:600px){.app{padding-left:20px;padding-right:20px}.scorecard{padding:18px}.score{font-size:112px}.position{min-height:78px}.position .jersey{font-size:28px}.modal{border-radius:20px;margin-bottom:5vh;max-height:90dvh}.overlay{align-items:center}}
+    @media (max-width:350px){.app{padding-left:8px;padding-right:8px}.scoregrid,.statsgrid,.courtsgrid{gap:6px}.scorecard{padding:9px 6px}.statcard{padding:8px 6px}.position{min-height:57px}.position .jersey{font-size:19px}.brand h1{font-size:17px}.teamsetup{padding:7px}.formgrid{gap:6px}}
+    @media (orientation:landscape) and (max-height:550px){.app{max-width:960px}.scorecard .score{font-size:70px}.scoregrid,.statsgrid,.courtsgrid{gap:8px}.modal{max-height:98dvh}.modal-body{padding-top:9px;padding-bottom:9px}}
+    @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+/* VOLLEY REF 1.1 — hlavná obrazovka bez zvislého rolovania */
+    :root { --dock: 51px; }
+    html, body { width:100%;height:100%;overflow:hidden;overscroll-behavior:none; }
+    body { min-height:0;height:100dvh;background:#071326; }
+    .app {
+      width:100%;max-width:680px;height:calc(100dvh - var(--dock) - var(--safe-bottom));
+      padding:calc(6px + var(--safe-top)) 8px 5px;
+      display:flex;flex-direction:column;gap:5px;overflow:hidden;
+    }
+    header { flex:0 0 33px;min-height:0;margin:0;gap:5px; }
+    .brand { gap:6px;min-width:0; }
+    .brand-icon { width:32px;height:32px;border-radius:9px;font-size:18px; }
+    .brand h1 { font-size:16px;line-height:1.05;white-space:nowrap; }
+    .brand small { font-size:9px;margin-top:2px;letter-spacing:.1px; }
+    .tools { gap:5px; }
+    .iconbtn { height:32px;min-width:34px;padding:0 6px;font-size:19px;border-radius:8px; }
+    .topstrip { flex:0 0 37px;min-height:0;padding:3px 9px;border-radius:10px;margin:0; }
+    .topstrip .sets { gap:8px;font-size:12px; }
+    .settag { border-radius:6px;padding:4px 7px;font-size:12px; }
+    .setscore {font-size:18px;letter-spacing:.3px;line-height:1.0;}
+    .topstrip .subtext {font-size:9px;line-height:1.1;}
+    .match-state {max-width:58%;text-align:right;font-size:10px;font-weight:850;line-height:1.2;white-space:normal;}
+    .match-state.complete { color:var(--green); }
+    .match-state.neutral { color:var(--muted); }
+    .arena {flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;}
+    .team-panel {min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto minmax(0,1.06fr);gap:6px;}
+    .scorecard {min-width:0;min-height:0;display:flex;flex-direction:column;align-items:stretch;padding:6px;border-radius:12px;overflow:hidden;}
+    .scorecard .teamname{font-size:clamp(12px,3.6vw,16px);line-height:1.1;min-height:15px;white-space:nowrap;}
+    .servepill {flex:0 0 17px;height:17px;line-height:17px;font-size:10px;margin:1px 0 0;}
+    .score {flex:1;min-height:0;margin:0;display:grid;place-items:center;font-size:clamp(43px,min(15vw,11dvh),82px);line-height:1;letter-spacing:-2px;}
+    .pointbtn {flex:0 0 40px;min-height:40px;padding:0;font-size:16px;border-radius:9px;box-shadow:none;}
+    .statcard {display:grid;grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;padding:5px;border-radius:11px;}
+    .statrow, .statrow:first-child {display:grid;grid-template-columns:minmax(0,1fr) 58px;gap:4px;align-items:center;margin:0;min-height:38px;}
+    .stat-label {display:flex;flex-direction:column;gap:0;min-width:0;}
+    .stat-label .kind {font-size:10px;font-weight:800;color:var(--muted);white-space:nowrap;}
+    .stat-label .counter {font-size:16px;line-height:1.2;font-weight:900;}
+    .stat-label .limit {font-size:12px;}
+    .statrow .actionbtn {height:39px;min-height:39px;border-radius:8px;font-size:11px;letter-spacing:0;padding:0 2px;line-height:1.15;}
+    .statrow.exhausted .counter {color:var(--yellow);}
+    .court {display:flex;flex-direction:column;min-height:0;padding:5px;border-radius:11px;overflow:hidden;}
+    .net {flex:0 0 3px;height:3px;margin:9px 3px 6px;}
+    .net:after {font-size:8px;top:-11px;}
+    .positions {flex:1;min-height:0;grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;}
+    .position {min-height:0;border-radius:7px;padding:1px 0;}
+    .position .jersey {font-size:clamp(16px,4.8vw,25px);}
+    .position .posno {top:2px;left:4px;font-size:8px;}
+    .position .smallmark {top:2px;right:2px;font-size:9px;padding:0 2px;}
+    .position .servemark {bottom:1px;font-size:7px;}
+    .courtfoot {flex:0 0 25px;min-height:0;margin:4px 0 0;font-size:10px;white-space:nowrap;overflow:hidden;}
+    .courtfoot span {overflow:hidden;text-overflow:ellipsis;}
+    .courtfoot .litebtn {flex:0 0 auto;min-height:24px!important;height:24px;padding:1px 6px!important;font-size:10px;}
+    .logline {flex:0 0 24px;min-height:0;height:24px;margin:0;padding:5px 7px;border-radius:5px;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .footer {height:calc(var(--dock) + var(--safe-bottom));padding:5px max(8px,calc((100% - 664px)/2)) calc(5px + var(--safe-bottom));gap:6px;}
+    .footer button {min-height:0;height:41px;padding:2px;font-size:12px;border-radius:8px;}
+    #toast {bottom:calc(var(--dock) + 14px + var(--safe-bottom));font-size:12px;}
+    .overlay .modal {max-height:93dvh;}
+    /* Modálne okná sa môžu posúvať; hlavná obrazovka zápasu nie. */
+    @media (max-height:690px) {
+      .app {gap:4px;padding-top:calc(4px + var(--safe-top));}
+      header {flex-basis:30px;} .brand-icon,.iconbtn{height:30px;} .brand-icon{width:30px;}
+      .topstrip{flex-basis:33px;} .team-panel{gap:4px;}
+      .scorecard{padding:4px;} .score {font-size:clamp(38px,min(13vw,10dvh),67px);}
+      .pointbtn{min-height:36px;flex-basis:36px;}
+      .statcard{gap:3px;padding:4px;} .statrow,.statrow:first-child{min-height:33px;}
+      .statrow .actionbtn{min-height:34px;height:34px;} .stat-label .counter{font-size:14px;}
+      .net{margin-top:7px;margin-bottom:4px;} .courtfoot{flex-basis:23px;}
+      .logline{flex-basis:21px;height:21px;padding-top:3px;}
+    }
+    @media (max-height:545px) and (orientation:portrait) {
+      :root{--dock:45px;}
+      .brand small{display:none;} .topstrip{flex-basis:30px;}
+      .team-panel{grid-template-rows:minmax(0,.85fr) auto minmax(0,1fr);}
+      .statrow,.statrow:first-child{min-height:31px;} .statrow .actionbtn{min-height:31px;height:31px;}
+      .courtfoot{flex-basis:21px;} .footer button{height:35px;}
+      .scorecard .teamname{font-size:12px;} .servepill{flex-basis:14px;height:14px;line-height:14px;}
+      .pointbtn{flex-basis:32px;min-height:32px;}
+      .position .jersey{font-size:16px;} .logline{display:none;}
+    }
+    @media (max-width:355px){
+      .app{padding-left:5px;padding-right:5px;}
+      .arena{gap:4px;} .statrow,.statrow:first-child{grid-template-columns:minmax(0,1fr) 49px;gap:2px;}
+      .statrow .actionbtn{font-size:10px;}.stat-label .kind{font-size:9px;}
+      .position .posno{left:2px;} .position .jersey{font-size:17px;}
+      .courtfoot{font-size:9px;} .brand h1{font-size:15px;}
+    }
+    @media (orientation:landscape) and (max-height:550px) {
+      :root{--dock:43px;}
+      .app{max-width:760px;height:calc(100dvh - var(--dock) - var(--safe-bottom));gap:3px;padding:3px 7px;}
+      header{flex-basis:28px;} .brand-icon,.iconbtn{height:27px;} .brand-icon{width:27px;}
+      .brand small{display:none;} .topstrip{flex-basis:29px;}
+      .score-row{gap:5px;}
+      .live-score{padding:4px 6px;gap:2px;}
+      .live-score .srow{height:38px;}
+      .live-score .snumber{font-size:clamp(32px,9vw,46px);}
+      .live-score .add-point{height:35px;min-width:56px;font-size:13px;}
+      .live-score .quick-actions button{height:30px;min-height:30px;font-size:10px;}
+      .field-main{grid-template-rows:minmax(0,1fr) 10px minmax(0,1fr);padding:3px;}
+      .field-half{padding:3px 7px;}
+      .field-half .side-header{height:16px;flex-basis:16px;}
+      .field-half .side-header .side-title{font-size:10px;}
+      .field-half .side-header .side-caption{font-size:8px;}
+      .field-half .side-header button{width:24px;height:17px;font-size:10px;}
+      .player-circle .jersey-big{font-size:clamp(18px,5.2vw,28px);}
+      .footer button{height:34px;}
+    }
+    @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+
+/* v2.2: vertikálna sieť v strede, ihrisko vľavo a vpravo z pohľadu empajru */
+:root { --dock:50px; --colA:#64b6ff;--colB:#ffa65b; }
+body.setup-mode,html:has(body.setup-mode){height:100%;overflow:auto!important;overscroll-behavior:auto}
+body.setup-mode {min-height:100dvh;height:auto;background:#071326}
+body.setup-mode .app {display:block;height:auto;min-height:100dvh;max-width:760px;padding:14px 14px 30px;overflow:visible}
+body.setup-mode .footer{display:none}
+.app.live {max-width:690px;padding:calc(4px + var(--safe-top)) 7px 5px;gap:5px;height:calc(100dvh - var(--dock) - var(--safe-bottom));}
+.app.live header {height:34px;min-height:34px;flex:0 0 34px;margin:0}
+.avr-logo{display:inline-flex;align-items:center;justify-content:center;width:46px;height:28px;border:1px solid #4b88c5;border-radius:7px;background:linear-gradient(135deg,#234d80,#112641);font-size:15px;font-weight:1000;font-style:italic;color:#fff;letter-spacing:-1px;box-shadow:inset 0 -2px 0 #e7f2ff2b}
+.avr-logo b{color:#ffca6a;font-weight:1000}
+.avr-logo.big{width:76px;height:47px;font-size:24px;border-radius:11px}
+.brand--compact{gap:6px}
+.brand--compact h1{font-size:16px;margin:0;letter-spacing:.3px}
+.brand--compact .mini-line{font-size:9px;color:#9cbbda;letter-spacing:.2px;margin-top:1px}
+.head-center{font-size:12px;font-weight:900;white-space:nowrap;line-height:1.05;text-align:center;color:#daeaff}
+.head-center strong{font-size:17px;display:block;color:white}
+.iconbtn.small{min-width:32px;width:32px;height:30px;padding:0;font-size:17px;border-radius:9px}
+.match-main{display:flex;flex-direction:column;flex:1;min-height:0;gap:5px}
+.score-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;flex:0 0 auto;min-height:0}
+.live-score{min-width:0;display:flex;flex-direction:column;align-items:stretch;border:1px solid #376994;border-radius:12px;background:linear-gradient(145deg,#183e66,#102746);padding:6px 7px;gap:3px}
+.live-score.orange{border-color:#805835;background:linear-gradient(145deg,#49331e,#28221c)}
+.live-score.serving{box-shadow:inset 0 0 0 1px var(--green)}
+.live-score .sname{font-size:12px;text-transform:uppercase;letter-spacing:.1px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.live-score .tiny-serve{font-size:8px;color:#8da6c5;white-space:nowrap}
+.live-score .tiny-serve.on{color:#64eab6;font-weight:900}
+.live-score .srow{display:flex;align-items:center;justify-content:space-between;gap:4px;height:47px}
+.live-score .snumber{font-size:clamp(38px,12vw,58px);font-weight:1000;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-2px}
+.live-score .add-point{border:0;border-radius:9px;background:var(--blue);color:#071a31;font-size:15px;font-weight:1000;height:43px;min-width:66px;padding:0 7px;touch-action:manipulation}
+.live-score.orange .add-point{background:var(--orange)}
+.live-score .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.live-score .quick-actions button{border:1px solid #486887;background:#1a385a;border-radius:8px;color:#eff7ff;height:39px;min-height:39px;font-size:12px;font-weight:900;padding:1px 2px;white-space:nowrap}
+.live-score.orange .quick-actions button{border-color:#76583a;background:#3d3022}
+.live-score .quick-actions button span{font-size:9px;color:#c4d5e9;font-weight:650;display:block;line-height:1.15}
+.live-score .quick-actions button.at-limit{color:#ffde83;border-color:#a77d37}
+.live-score .score-sub{display:flex;justify-content:space-between;gap:4px;align-items:center;font-size:10px;min-height:14px}
+.live-score .cap-mini{font-size:10px;color:#ffdf9d;white-space:nowrap}
+.field-main{flex:1;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) 12px minmax(0,1fr);gap:2px;background:#0c1f3b;border:1px solid #2d5074;padding:4px;border-radius:16px;overflow:hidden;box-shadow:inset 0 0 0 1px #3a638f}
+.field-half{min-height:0;display:flex;flex-direction:column;gap:3px;border-radius:9px;padding:4px 8px;position:relative;overflow:hidden;background:linear-gradient(180deg,#15425a,#113647);border:1px solid #3d7493}
+.field-half.orange{background:linear-gradient(180deg,#5a4023,#42311c);border-color:#927148}
+.field-half .side-header{height:18px;flex:0 0 18px;display:flex;justify-content:space-between;align-items:center;gap:5px;min-height:0}
+.field-half .side-header .side-title{font-size:12px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field-half .side-header .side-caption{font-size:9px;color:#d5e7ed;white-space:nowrap}
+.field-half .side-header button{width:28px;height:20px;min-height:0;border:1px solid #ffffff40;background:#091d2c69;color:#d7e9f5;border-radius:5px;font-size:12px;padding:0}
+.field-half .player-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px 8px;flex:1;min-height:0;padding:2px 4px}
+.player-circle{position:relative;border:1px solid #ffffff52;border-radius:11px;background:#0c2a4278;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:0;gap:0}
+.field-half.orange .player-circle{background:#3a291866}
+.player-circle.serving-position{border:2px solid #73ffbd;background:#0d59428c}
+.player-circle .pos-index{position:absolute;left:5px;top:3px;font-size:9px;color:#a7c8d3;font-weight:750}
+.player-circle .jersey-big{font-size:clamp(20px,7.3vw,37px);line-height:1;font-weight:1000;letter-spacing:-.7px;font-variant-numeric:tabular-nums}
+.player-circle .captain-mark{position:absolute;top:2px;right:3px;border-radius:4px;background:#ffcc6e;color:#241700;font-size:9px;font-weight:1000;padding:1px 4px}
+.player-circle .serve-mark{position:absolute;bottom:2px;right:4px;color:#73ffbd;font-size:9px;font-weight:900}
+.court-net{position:relative;background:repeating-linear-gradient(90deg,#e7f3ff 0 8px,#7ba5c7 8px 10px);border-top:2px solid white;border-bottom:2px solid #88b1d2;border-radius:2px;display:flex;align-items:center;justify-content:center}
+.court-net span{z-index:1;position:relative;color:#123552;background:#e6f3ff;padding:0 8px;border-radius:3px;font-size:9px;font-weight:1000;line-height:12px;letter-spacing:1px}
+.app.live .last-action{font-size:10px;line-height:1.1;min-height:11px;height:11px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;flex:0 0 11px;color:#9eafc4;padding:0 3px}
+body:not(.setup-mode) .footer{grid-template-columns:1fr 1fr 1.1fr}
+body:not(.setup-mode) .footer button{height:40px;min-height:0;font-size:12px;border-radius:9px}
+/* Príprava zápasu (tu je rolovanie dovolené). */
+.setup-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px}
+.setup-heading{font-size:23px;font-weight:950;letter-spacing:-.3px;margin:0}
+.setup-lead{font-size:12px;color:#adbfda;margin:4px 0 0}
+.setup-section{background:#10233e;border:1px solid #315070;border-radius:14px;padding:13px;margin:0 0 13px}
+.setup-section h2{margin:0 0 11px;font-size:15px;letter-spacing:.1px}
+.setup-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.setup-section .field{margin:0}
+.setup-section input,.setup-section select{background:#07192e;border-radius:10px;min-height:44px;padding:8px 10px}
+.setup-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.setup-team{background:#12314f;border:1px solid #3676a7;border-radius:13px;padding:10px;min-width:0}
+.setup-team.orange{background:#3e2a1d;border-color:#87653c}
+.setup-team h2{font-size:15px;margin:0 0 10px}
+.setup-team .field{margin:0 0 7px}
+.setup-mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0}
+.setup-mini .field input{min-height:48px;padding:5px 1px;text-align:center;font-size:20px;font-weight:900}
+.setup-mini .field label{font-size:10px;text-align:center}
+.setup-mini-note{font-size:10px;letter-spacing:1px;text-align:center;color:#9cb4cf;margin:5px auto}
+.setup-net{border-top:4px dashed #c7deef;margin:9px 0 8px;position:relative}
+.setup-net:after{content:'SIEŤ';background:#12314f;position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:9px;padding:0 6px;color:#e0ecf5}
+.setup-start{position:sticky;bottom:9px;width:100%;height:56px;border:0;border-radius:13px;background:#73e5b8;color:#0a2831;font-size:17px;font-weight:1000;box-shadow:0 5px 22px #0008;margin:6px 0 16px}
+.setup-helper{font-size:11px;color:#adc1d8;line-height:1.5;margin:0 0 7px}
+@media (max-width:520px){.setup-pair{grid-template-columns:1fr;gap:10px}.setup-options{gap:7px}.setup-team{padding:10px 12px}}
+@media (max-height:680px) and (orientation:portrait){
+ .app.live{gap:3px;padding-top:calc(2px + var(--safe-top))}
+ .app.live header{height:30px;flex-basis:30px}
+ .field-main{gap:1px;padding:3px;grid-template-rows:minmax(0,1fr) 10px minmax(0,1fr)}
+ .field-half{gap:1px;padding:2px 6px}
+ .field-half .side-header{height:17px;flex-basis:17px}
+ .field-half .player-grid{gap:2px 7px}
+ .live-score{padding:4px 6px;gap:1px}
+ .live-score .srow{height:40px}
+ .live-score .snumber{font-size:clamp(34px,10vw,50px)}
+ .live-score .add-point{height:38px}
+ .live-score .quick-actions button{height:33px;min-height:33px}
+ .player-circle .jersey-big{font-size:clamp(17px,5.7vw,27px)}
+ .app.live .last-action{display:none}
+}
+@media (max-height:560px) and (orientation:portrait){
+ :root{--dock:44px}
+ .app.live header{flex-basis:27px;height:27px}
+ .brand--compact .mini-line{display:none}
+ .field-half .side-header{height:16px;flex-basis:16px}
+ .live-score .quick-actions button{height:30px;min-height:30px}
+ .live-score .srow{height:35px}
+ .live-score .add-point{height:33px}
+ .live-score .score-sub{display:none}
+ .field-half .player-grid{padding:0}
+ .player-circle .jersey-big{font-size:19px}
+ .footer button{height:34px!important}
+}
+@media (orientation:landscape) and (max-height:560px){
+ .app.live{max-width:1200px;gap:3px}
+ .match-main{flex-direction:row;gap:5px}
+ .score-row{width:43%;min-width:0;height:100%;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .live-score .srow{flex:1;min-height:0}
+ .live-score .snumber{font-size:clamp(33px,10vh,57px)}
+ .live-score .score-sub{display:none}
+ .live-score .quick-actions{grid-template-columns:1fr}
+ .live-score .quick-actions button{height:32px;min-height:28px}
+ .field-main{flex:1;min-width:0}
+ .player-circle .jersey-big{font-size:clamp(19px,6vh,29px)}
+ .field-half .side-header{height:17px;flex-basis:17px}
+ .field-half .player-grid{gap:2px}
+ .app.live .last-action{display:none}
+}
+
+
+/* VOLLEY REF 2.2: skutočné ihrisko z empajru – sieť ZVISLE medzi tímami. */
+.app.live .field-main {
+ display:grid; grid-template-columns:minmax(0,1fr) 13px minmax(0,1fr);
+ grid-template-rows:minmax(0,1fr); gap:2px; padding:5px; min-height:0;
+}
+.app.live .field-half {min-width:0;min-height:0;padding:5px 4px;gap:4px;}
+.app.live .field-half .side-header{display:grid;grid-template-columns:minmax(0,1fr) 24px;gap:2px;height:30px;flex:0 0 30px;align-items:center;}
+.app.live .field-half .side-title{font-size:clamp(10px,3.2vw,14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.app.live .field-half .side-caption{display:none;}
+.app.live .field-half .side-header button{width:23px;height:23px;font-size:13px;}
+.app.live .field-half .player-grid {
+ display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+ grid-template-rows:repeat(3,minmax(0,1fr)); gap:7px 4px;
+ flex:1;min-height:0;padding:6px 0;
+}
+.app.live .player-circle{border-radius:12px;min-width:0;}
+.app.live .player-circle .jersey-big{font-size:clamp(20px,6.4vw,35px);}
+.app.live .player-circle .pos-index{font-size:10px;left:4px;top:3px;}
+.app.live .court-net {
+ min-height:0;min-width:0;width:13px;
+ background:repeating-linear-gradient(0deg,#d7ebff 0 7px,#7199bb 7px 9px);
+ border-left:2px solid white;border-right:2px solid #a6cbe7;border-top:0;border-bottom:0;
+ border-radius:3px; display:flex;justify-content:center;align-items:center;
+}
+.app.live .court-net span{
+ writing-mode:vertical-rl;transform:rotate(180deg);
+ letter-spacing:1.5px;line-height:12px;padding:7px 1px;font-size:9px;
+}
+.setup-mini.two-cols{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 9px;}
+.setup-mini-note.two-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;letter-spacing:0.25px;margin:8px 0 2px;}
+@media (max-width:370px){
+ .app.live .field-main{grid-template-columns:minmax(0,1fr) 10px minmax(0,1fr);gap:1px;padding:3px;}
+ .app.live .court-net{width:10px;}
+ .app.live .court-net span{font-size:8px;line-height:9px;padding:6px 0;}
+ .app.live .field-half{padding:3px 2px;}
+ .app.live .field-half .player-grid{gap:4px 3px;padding:3px 0;}
+ .app.live .player-circle .jersey-big{font-size:clamp(19px,6vw,25px);}
+ .app.live .field-half .side-header{grid-template-columns:minmax(0,1fr) 20px;gap:1px;height:26px;flex-basis:26px;}
+ .app.live .field-half .side-header button{width:20px;height:21px;font-size:11px;}
+ .app.live .field-half .side-title{font-size:10px;}
+}
+@media (max-height:700px) and (orientation:portrait){
+ .app.live .field-half .side-header{height:22px;flex-basis:22px;}
+ .app.live .field-half .player-grid{gap:3px 4px;padding:2px 0;}
+ .app.live .player-circle .jersey-big{font-size:clamp(19px,5.5vw,27px);}
+}
+@media (orientation:landscape) and (max-height:560px){
+ .app.live .match-main{flex-direction:column;gap:3px;}
+ .app.live .score-row{width:100%;height:auto;grid-template-columns:repeat(2,minmax(0,1fr));}
+ .app.live .live-score{display:grid;grid-template-columns:minmax(0,1fr) minmax(70px,1fr) minmax(0,1.3fr);grid-template-rows:1fr 1fr;gap:2px;align-items:center;padding:2px 6px;}
+ .app.live .live-score > div:first-child{grid-column:1;grid-row:1;}
+ .app.live .live-score .srow{grid-column:2;grid-row:1 / 3;height:42px;min-height:0;}
+ .app.live .live-score .snumber{font-size:clamp(26px,6vh,38px);}
+ .app.live .live-score .add-point{height:31px;min-width:55px;}
+ .app.live .live-score .quick-actions{grid-column:3;grid-row:1 / 3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+ .app.live .live-score .quick-actions button{height:33px;min-height:0;}
+ .app.live .live-score .score-sub{grid-column:1;grid-row:2;}
+ .app.live .field-main{flex:1;min-height:0;}
+ .app.live .field-half .side-header{height:17px;flex-basis:17px;}
+ .app.live .field-half .player-grid{gap:2px 5px;padding:0 4px;}
+ .app.live .player-circle .jersey-big{font-size:clamp(17px,4vh,27px);}
+}
+
+
+/* 2.3: grafický prvok zo stránky AVR SR; zrozumiteľná náhrada pri offline režime. */
+.avr-logo{overflow:hidden;isolation:isolate;position:relative;background:#f6f9ff;border-color:#c4d0df;}
+.avr-logo img{width:100%;height:100%;object-fit:contain;display:block;position:absolute;inset:0;z-index:2;padding:1px;}
+.avr-logo .logo-fallback{position:relative;z-index:1;color:#183b60;letter-spacing:-1px}
+.avr-logo.big img{padding:3px}
+.setup-brand-link{color:#9dcaf5;font-size:11px;display:inline-block;margin-top:7px;text-decoration:underline;text-underline-offset:2px}
+.setup-footnote{font-size:11px;color:#aec0d7;line-height:1.4;margin:4px 0 14px}
+.setup-title-strip{padding:8px 1px 3px;color:#d8e5f4;font-size:11px;letter-spacing:.3px}
+
+
+/* VOLLEY REF 3.0 – výraznejšie skóre a počítadlá; veľké čísla dresov. */
+.app.live .live-score{gap:3px;padding:6px 7px 5px}
+.app.live .live-score .sname{font-size:13px}
+.app.live .live-score .srow{height:65px;gap:5px}
+.app.live .live-score .snumber{font-size:clamp(52px,15.5vw,78px);line-height:.96;letter-spacing:-3px;flex:0 1 auto;min-width:0}
+.app.live .live-score .add-point{height:54px;min-width:57px;flex:0 0 auto;font-size:14px;padding:0 5px}
+.app.live .live-score .quick-actions{gap:5px}
+.app.live .live-score .quick-actions button{height:51px;min-height:51px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:1px 0;border-width:1px}
+.app.live .live-score .quick-actions button>span{font-size:9px;letter-spacing:.15px;line-height:1.2;font-weight:850}
+.app.live .live-score .quick-actions .stat-count{font-weight:950;font-variant-numeric:tabular-nums;font-size:23px;line-height:1;color:#fff;white-space:nowrap}
+.app.live .live-score .quick-actions .stat-count small{font-size:13px;color:#bed5eb;font-weight:650}
+.app.live .player-circle{border-radius:10px}
+.app.live .player-circle .jersey-big{font-size:clamp(27px,min(11vw,7vh),50px);line-height:1;letter-spacing:-1.3px;font-weight:1000;max-width:100%;overflow:hidden}
+.app.live .player-circle .pos-index{font-size:8px;left:3px;top:2px;opacity:.8}
+.app.live .player-circle .captain-mark{font-size:8px;padding:0 3px;top:2px;right:2px}
+.app.live .player-circle .serve-mark{font-size:8px;right:3px;bottom:1px}
+.app.live .field-half .player-grid{gap:4px 4px;padding:2px 0}
+/* Intro: both teams and all twelve inputs visible together, even on mobile. */
+.setup-pair{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.setup-section{padding:10px;margin-bottom:9px}
+.setup-section h2{margin:0 0 8px;font-size:15px}
+.setup-team{padding:8px 7px;min-width:0}
+.setup-team h2{font-size:12px;margin:0 0 6px}
+.setup-team .field{min-width:0;margin-bottom:5px}
+.setup-team .field>label{font-size:10px;margin-bottom:2px}
+.setup-team .field>input{width:100%;min-width:0;min-height:38px;padding:5px 4px;font-size:14px}
+.setup-team .setup-mini.two-cols{gap:3px 5px;margin:4px 0}
+.setup-team .setup-mini.two-cols input{height:39px;min-height:39px;font-weight:950;font-size:22px;padding:2px}
+.setup-team .setup-mini.two-cols label{font-size:9px}
+.setup-team .setup-mini-note{margin:5px 0 2px;font-size:9px}
+.setup-top{margin-bottom:9px}
+.setup-heading{font-size:20px}
+.setup-lead{font-size:11px}
+.resume-match{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:48px;margin:0 0 12px;padding:7px 10px;background:#174d46;color:#d3ffeb;border:1px solid #58d5a6;border-radius:11px;font-size:12px;font-weight:900;text-align:left}
+.resume-match small{font-size:11px;font-weight:800;white-space:nowrap}
+@media (max-width:520px){.setup-pair{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.setup-team{padding:7px 5px}.setup-team h2{font-size:11px}.setup-team .field>input{font-size:12px}.setup-team .setup-mini.two-cols input{font-size:20px}}
+@media (max-width:355px){.setup-team{padding:6px 4px}.setup-team .setup-mini.two-cols{gap:3px}.setup-team .setup-mini.two-cols input{font-size:19px}.app.live .live-score .snumber{font-size:clamp(48px,15vw,63px)}.app.live .live-score .add-point{min-width:51px;font-size:12px}.app.live .live-score .quick-actions .stat-count{font-size:20px}.app.live .live-score .quick-actions .stat-count small{font-size:12px}}
+@media (max-height:700px) and (orientation:portrait){
+ .app.live .live-score .srow{height:54px}
+ .app.live .live-score .snumber{font-size:clamp(49px,14.5vw,64px)}
+ .app.live .live-score .add-point{height:47px}
+ .app.live .live-score .quick-actions button{height:44px;min-height:44px}
+ .app.live .live-score .quick-actions .stat-count{font-size:21px}
+ .app.live .player-circle .jersey-big{font-size:clamp(26px,min(10.5vw,6.5vh),42px)}
+}
+@media (max-height:580px) and (orientation:portrait){
+ .app.live .live-score .srow{height:44px}
+ .app.live .live-score .snumber{font-size:clamp(40px,13vw,54px)}
+ .app.live .live-score .add-point{height:39px}
+ .app.live .live-score .quick-actions button{height:39px;min-height:39px}
+ .app.live .live-score .quick-actions .stat-count{font-size:19px}
+ .app.live .live-score .score-sub{display:none}
+ .app.live .player-circle .jersey-big{font-size:clamp(24px,min(10.1vw,6vh),36px)}
+}
+@media (orientation:landscape) and (max-height:560px){
+ .app.live .live-score .srow{height:43px}
+ .app.live .live-score .snumber{font-size:clamp(31px,6.7vh,50px)}
+ .app.live .live-score .add-point{height:33px;min-width:48px}
+ .app.live .live-score .quick-actions button{height:36px;min-height:36px}
+ .app.live .live-score .quick-actions .stat-count{font-size:20px}
+ .app.live .live-score .quick-actions .stat-count small{font-size:10px}
+ .app.live .player-circle .jersey-big{font-size:clamp(24px,5.7vh,37px)}
+}
+  
+    .photo-import{margin:10px 0;padding:12px;border:1px solid #6283ae;border-radius:12px;background:#102e4c;color:#fff}
+    .photo-import button{background:#2863a1;color:white;border:1px solid #7ea6cf;border-radius:8px;padding:10px;margin:4px;font-weight:700}
+    .photo-import input[type=file]{max-width:100%;font-size:12px}
+    .photo-import img{max-height:230px;max-width:100%;object-fit:contain;margin:8px auto;display:block}
+    .photo-import .photo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+    .photo-import .photo-grid label{font-size:11px;text-align:center}
+    .photo-import .photo-grid input{width:100%;font-size:19px;text-align:center;padding:6px;color:#111}
+    .photo-import textarea{width:100%;min-height:70px;color:#111}
+  </style>
+</head>
+<body>
+  <main class="app" id="app"></main>
+  <nav class="footer" id="footer"></nav>
+  <div class="overlay" id="overlay" aria-hidden="true"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script>
+  (()=>{'use strict';
+    const KEY='volley_ref_2_ihrisko';
+    const $=s=>document.querySelector(s);
+    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const copy=v=>JSON.parse(JSON.stringify(v));
+    const positions=[4,3,2,5,6,1];
+    const initial=()=>({version:1,started:false,bestOf:5,subLimit:6,setNo:1,sets:[0,0],scores:[0,0],
+      serving:0,firstServeOfSet:0,sideSwapped:false,decidingSwitched:false,setWinner:null,matchOver:false,
+      teams:[{name:'DOMÁCI',captain:'',slots:[],starterLineup:[],usedSubs:[],timeouts:0,subs:0},
+             {name:'HOSTIA',captain:'',slots:[],starterLineup:[],usedSubs:[],timeouts:0,subs:0}],
+      setHistory:[],log:[],lastAction:'Vyplň úvodné postavenie hráčok.'});
+    let S=initial(), undoStack=[];
+    let introActive=true; // Always show player-entry screen when HTML opens; saved match can be resumed.
+    try{const loaded=JSON.parse(localStorage.getItem(KEY)||'null');if(loaded?.state?.version===1 && Array.isArray(loaded.state.teams)&&loaded.state.teams.length===2){S=loaded.state;undoStack=Array.isArray(loaded.undo)?loaded.undo.slice(-60):[]}}catch(e){console.warn('Uloženie sa nepodarilo načítať',e)}
+    const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({state:S,undo:undoStack.slice(-60)}))}catch(e){toast('Údaje sa nepodarilo uložiť do pamäte zariadenia.')}};
+    function snapshot(){undoStack.push(copy(S));if(undoStack.length>60)undoStack.shift()}
+    function commit(label,who=null,extra={}){S.lastAction=label;S.log.push({at:new Date().toISOString(),set:S.setNo,score:S.scores.slice(),action:label,team:who,...extra});if(S.log.length>1500)S.log.shift();save();render()}
+    const order=()=>S.sideSwapped?[1,0]:[0,1];
+    const deciding=()=>S.setNo===S.bestOf;
+    const target=()=>deciding()?15:25;
+    function winnerAtScore(){if(Math.max(...S.scores)<target())return null;if(Math.abs(S.scores[0]-S.scores[1])<2)return null;return S.scores[0]>S.scores[1]?0:1}
+    let toastHandle=null;
+    function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('shown');clearTimeout(toastHandle);toastHandle=setTimeout(()=>t.classList.remove('shown'),3400)}
+    const username=i=>S.teams[i].name||('Družstvo '+(i+1));
+    const jerseyAt=(ti,pos)=>S.teams[ti].slots[pos-1]?.num||'–';
+
+    const avrBadge=(large=false)=>`<span class="avr-logo ${large?'big':''}" role="img" aria-label="AVR – Asociácia volejbalových rozhodcov"><img alt="AVR" src="https://avr-sr.sk/favicon.ico" onerror="this.style.display='none'" /><span class="logo-fallback">AV<b>R</b></span></span>`;
+    function miniJerseyInput(i,p){const existing=S.started?S.teams[i].starterLineup[p-1]:'';return `<div class="field"><label for="p${i}_${p}">Poz. ${p}</label><input id="p${i}_${p}" name="p${i}_${p}" inputmode="numeric" type="number" min="0" max="99" value="${esc(existing??'')}" required placeholder="#"></div>`}
+    function setupTeamCard(i,isLeft){const t=S.teams[i],ord=isLeft?[5,4,6,3,1,2]:[2,1,3,6,4,5];return `<section class="setup-team ${i===1?'orange':''}"><h2>${isLeft?'ĽAVÁ':'PRAVÁ'} STRANA · ${i===0?'MODRÍ':'ORANŽOVÍ'}</h2>
+      <div class="field"><label for="name${i}">Názov družstva</label><input id="name${i}" name="name${i}" value="${esc(t.name)}" maxlength="25" required></div>
+      <div class="field"><label for="cap${i}">Kapitánka – číslo (C)</label><input id="cap${i}" name="cap${i}" inputmode="numeric" type="number" min="0" max="99" placeholder="Číslo C" value="${esc(t.captain)}"></div>
+      <div class="setup-mini-note two-cols"><span>${isLeft?'ZADNÝ RAD':'PRI SIETI'}</span><span>${isLeft?'PRI SIETI':'ZADNÝ RAD'}</span></div>
+      <div class="setup-mini two-cols">${ord.map(p=>miniJerseyInput(i,p)).join('')}</div>${photoControls(i)}</section>`}
+    // Photo assistant: on-device photo capture, optional OCR and mandatory human verification.
+    // OCR loads only on request and requires internet. No images are uploaded by this app.
+    const photoRosters=[[],[]];
+    const rosterMeta=[{},{}];
+    for(let i=0;i<2;i++){try{rosterMeta[i]=JSON.parse(localStorage.getItem('volley_ref_meta_'+i)||'{}')}catch(e){}}
+
+    function photoControls(i){return `<div class="photo-import"><strong>FOTO IMPORT – DRUŽSTVO ${i===0?'A':'B'}</strong><p style="font-size:12px">Odfotiť lístok R-5 alebo súpisku. Pred použitím skontroluj všetky čísla.</p><button type="button" data-action="photoLineup" data-team="${i}">📷 POSTAVENIE</button><button type="button" data-action="photoRoster" data-team="${i}">📷 SÚPISKA</button><p style="font-size:11px">Súpiska: <span id="rosterStatus${i}">${photoRosters[i].length?photoRosters[i].join(', '):'nenačítaná'}</span></p></div>`}
+    let photoTarget=0,photoMode='lineup',photoUrl='';
+    function photoDialog(i,mode){photoTarget=i;photoMode=mode;
+      const roster=photoRosters[i].join(', ');
+      const fields=mode==='lineup'?`<div class="photo-grid">${[4,3,2,5,6,1].map(p=>`<label>Pozícia ${p}<input id="ocrPos${p}" type="number" min="0" max="99" inputmode="numeric" placeholder="–"></label>`).join('')}</div>`:`<label>Názov družstva<input id="ocrTeamName" value="${esc(rosterMeta[i].name||S.teams[i].name)}"></label>
+<label>Kapitán – číslo (C)<input id="ocrCaptain" inputmode="numeric" value="${esc(rosterMeta[i].captain||S.teams[i].captain)}"></label>
+<label>Libero – čísla (L), oddelené čiarkou<input id="ocrLiberos" value="${esc(rosterMeta[i].liberos||'')}"></label>
+<label>Čísla súpisky<textarea id="ocrRoster">${esc(roster)}</textarea></label>
+<label>Hráči (číslo; meno, jeden na riadok)<textarea id="ocrPlayers" rows="7">${esc(rosterMeta[i].players||'')}</textarea></label>
+<p>Rozpoznané údaje vždy skontroluj. OCR nemusí správne určiť kapitána alebo libero.</p>`;
+      openModal(`Foto ${mode==='lineup'?'postavenia R-5':'súpisky'} – družstvo ${i===0?'A':'B'}`,`<div class="photo-import"><input type="file" id="photoFile" accept="image/*" capture="environment"><img id="photoPreview" style="display:none" alt="Fotografia dokumentu"><p id="ocrStatus">Po odfotení sa údaje automaticky predvyplnia.</p><button type="button" data-action="runPhotoOcr">ZNOVA ROZPOZNAŤ FOTOGRAFIU</button><button type="button" onclick="aiSettings()">AI NASTAVENIE</button><p style="font-size:11px">OCR vyžaduje internet. Pri rukopise nemusí správne rozpoznať čísla ani ich polohu. Vždy ich over podľa fotografie.</p>${fields}</div>`, `<button type="button" data-action="close">ZRUŠIŤ</button><button type="button" class="submit" data-action="applyPhoto">POTVRDIŤ ČÍSLA</button>`);
+    }
+    function loadOcr(){return new Promise((resolve,reject)=>{if(window.Tesseract)return resolve(window.Tesseract);let el=document.getElementById('tesseractLib');if(el){el.addEventListener('load',()=>resolve(window.Tesseract),{once:true});el.addEventListener('error',()=>reject(Error('OCR sa nenačítalo')),{once:true});return}el=document.createElement('script');el.id='tesseractLib';el.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';el.onload=()=>resolve(window.Tesseract);el.onerror=()=>reject(Error('OCR vyžaduje internetové pripojenie'));document.head.appendChild(el)})}
+    async function runPhotoOcr(){
+      const file=document.getElementById('photoFile')?.files?.[0],status=document.getElementById('ocrStatus');
+      if(!file)return toast('Najprv odfoť dokument.');
+      const endpoint=(localStorage.getItem('volley_ref_ai_endpoint')||'').trim();
+      const token=(sessionStorage.getItem('volley_ref_ai_token')||'').trim();
+      if(!endpoint||!token){status.textContent='AI nie je pripojená. Nastav URL servera a prístupový token v tlačidle AI NASTAVENIE.';return;}
+      if(!/^https:\/\//i.test(endpoint)){status.textContent='Server musí používať HTTPS.';return;}
+      status.textContent='AI rozpoznáva fotografiu…';
+      try{
+        const image=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file)});
+        const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({mode:photoMode,team:photoTarget===0?'A':'B',image})});
+        const data=await response.json();if(!response.ok)throw Error(data.error||'HTTP '+response.status);
+        const result=data.result||{}, warnings=(result.warnings||[]).join('; ');
+        if(photoMode==='lineup'){
+          let filled=0;for(const p of [1,2,3,4,5,6]){const v=result.positions?.[String(p)];if(v!==null&&v!==undefined&&/^\d{1,2}$/.test(String(v))){document.getElementById('ocrPos'+p).value=String(Number(v));filled++}}
+          status.textContent='AI vyplnila '+filled+'/6 pozícií. '+warnings+' Skontroluj podľa fotografie.';
+        }else{
+          if(result.team_name)document.getElementById('ocrTeamName').value=result.team_name;
+          if(result.captain)document.getElementById('ocrCaptain').value=result.captain;
+          document.getElementById('ocrLiberos').value=(result.liberos||[]).join(', ');
+          const players=result.players||[];
+          document.getElementById('ocrRoster').value=players.map(x=>x.number).join(', ');
+          document.getElementById('ocrPlayers').value=players.map(x=>x.number+'; '+x.name).join('\n');
+          status.textContent='AI vyplnila '+players.length+' hráčov. '+warnings+' Skontroluj všetky údaje.';
+        }
+      }catch(e){status.textContent='AI rozpoznávanie zlyhalo: '+e.message;}
+    }
+    function aiSettings(){
+      const endpoint=prompt('HTTPS URL zabezpečenej AI brány:',localStorage.getItem('volley_ref_ai_endpoint')||'');
+      if(endpoint===null)return;
+      if(endpoint&&!/^https:\/\//i.test(endpoint))return toast('Vyžaduje sa HTTPS URL.');
+      localStorage.setItem('volley_ref_ai_endpoint',endpoint.trim());
+      const token=prompt('Prístupový token AI brány (NIE OpenAI API kľúč):','');
+      if(token!==null)sessionStorage.setItem('volley_ref_ai_token',token.trim());
+      toast('Nastavenie AI uložené pre túto reláciu.');
+    }
+    function applyPhoto(){const i=photoTarget,f=document.getElementById('setupForm');if(!f)return toast('Formulár zápasu sa nenašiel.');if(photoMode==='lineup'){const vals={};for(const p of [1,2,3,4,5,6]){const v=document.getElementById('ocrPos'+p)?.value.trim();if(!/^\d{1,2}$/.test(v||''))return toast('Doplň všetkých šesť pozícií.');vals[p]=String(Number(v))}if(new Set(Object.values(vals)).size!==6)return toast('Čísla postavenia sa opakujú.');for(const p of [1,2,3,4,5,6]){const el=document.getElementById(`p${i}_${p}`);if(el)el.value=vals[p]}toast('Postavenie družstva '+(i===0?'A':'B')+' vyplnené.')}else{const raw=document.getElementById('ocrRoster').value;const arr=raw.split(/[,;\s]+/).filter(Boolean);if(!arr.length||arr.some(n=>!/^\d{1,2}$/.test(n)))return toast('Skontroluj čísla súpisky (0–99).');const nums=arr.map(n=>String(Number(n)));if(new Set(nums).size!==nums.length)return toast('Súpiska obsahuje duplicitné čísla.');const name=document.getElementById('ocrTeamName').value.trim(),captain=document.getElementById('ocrCaptain').value.trim(),
+      liberos=document.getElementById('ocrLiberos').value.trim(),players=document.getElementById('ocrPlayers').value.trim();
+      if(!name)return toast('Doplň názov družstva.');
+      if(captain&&!nums.includes(String(Number(captain))))return toast('Kapitán musí byť na súpiske.');
+      const ls=liberos.split(/[,;\\s]+/).filter(Boolean).map(n=>String(Number(n)));
+      if(ls.some(n=>!nums.includes(n)))return toast('Libero musí byť na súpiske.');
+      photoRosters[i]=nums;rosterMeta[i]={name,captain,liberos:ls.join(', '),players};
+      document.getElementById('name'+i).value=name;document.getElementById('cap'+i).value=captain;
+      try{localStorage.setItem('volley_ref_roster_'+i,JSON.stringify(nums));localStorage.setItem('volley_ref_meta_'+i,JSON.stringify(rosterMeta[i]))}catch(e){}toast('Súpiska uložená: '+nums.length+' hráčov.')}closeModal();const status=document.getElementById('rosterStatus'+i);if(status)status.textContent=photoRosters[i].join(', ')||'nenačítaná';}
+    for(let i=0;i<2;i++){try{photoRosters[i]=JSON.parse(localStorage.getItem('volley_ref_roster_'+i)||'[]')}catch(e){}}
+    function setupScreen(){document.body.classList.add('setup-mode');$('#app').classList.remove('live');
+      const ongoing=S.started;
+      $('#app').innerHTML=`<section class="setup-top"><div>${avrBadge(true)}</div><div style="text-align:right"><h1 class="setup-heading">VOLLEY REF 3.0</h1><p class="setup-lead">PRÍPRAVA ZÁPASU · ČÍSLA HRÁČOK</p></div></section>
+      ${ongoing?`<button class="resume-match" data-action="resume" type="button">▶ POKRAČOVAŤ V ROZBEHNUTOM ZÁPASE <small>Set ${S.setNo} · ${S.scores.join(' : ')}</small></button>`:''}
+      <form id="setupForm" data-next="0">
+       <section class="setup-section"><h2>1 · Družstvá a základné postavenie</h2>
+         <p class="setup-helper">Zadaj čísla dresov podľa pozícií 1–6. Kapitánku označíme C. Sieť bude medzi družstvami zvislo.</p>
+         <div class="setup-pair">${S.sideSwapped?setupTeamCard(1,true)+setupTeamCard(0,false):setupTeamCard(0,true)+setupTeamCard(1,false)}</div></section>
+       <section class="setup-section"><h2>2 · Nastavenie zápasu</h2><div class="setup-options">
+        <div class="field"><label for="bestOf">Hrá sa</label><select id="bestOf" name="bestOf"><option value="5" ${S.bestOf===5?'selected':''}>Na 3 víťazné sety</option><option value="3" ${S.bestOf===3?'selected':''}>Na 2 víťazné sety</option></select></div>
+        <div class="field"><label for="subLimit">Striedania / set</label><select id="subLimit" name="subLimit"><option value="6" ${S.subLimit===6?'selected':''}>6</option><option value="8" ${S.subLimit===8?'selected':''}>8</option></select></div>
+        <div class="field"><label for="firstServe">Prvé podanie</label><select id="firstServe" name="firstServe"><option value="0" ${S.serving===0?'selected':''}>${esc(username(0))}</option><option value="1" ${S.serving===1?'selected':''}>${esc(username(1))}</option></select></div>
+        <div class="field"><label for="bottomTeam">Družstvo vľavo od siete</label><select id="bottomTeam" name="bottomTeam"><option value="0" ${!S.sideSwapped?'selected':''}>${esc(username(0))}</option><option value="1" ${S.sideSwapped?'selected':''}>${esc(username(1))}</option></select></div>
+       </div></section>
+       ${ongoing?'<p class="setup-helper" style="color:#ffd391;text-align:center">Aktuálny zápas zostane uložený až do spustenia nového. Tlačidlo nižšie spustí nový zápas a nahradí starý.</p>':''}
+       <button class="setup-start" type="submit">▶ ${ongoing?'SPUSTIŤ NOVÝ ZÁPAS':'SPUSTIŤ ZÁPAS'}</button>
+       <p class="setup-helper" style="text-align:center">Po spustení: väčšie skóre a striedania · automatická rotácia · bez rolovania</p>
+      </form>`;
+      $('#footer').innerHTML='';}
+    function liveScore(i){let t=S.teams[i],sv=S.serving===i,disabled=!S.started||S.setWinner!==null;
+     return `<div class="live-score ${i===1?'orange':''} ${sv?'serving':''}" aria-label="Skóre ${esc(username(i))}">
+       <div style="display:flex;align-items:center;justify-content:space-between;gap:4px"><span class="sname">${esc(username(i))}</span><span class="tiny-serve ${sv?'on':''}">${sv?'● PODÁVA':'PRIJÍMA'}</span></div>
+       <div class="srow"><span class="snumber">${S.scores[i]}</span><button class="add-point" data-action="point" data-team="${i}" ${disabled?'disabled':''}>+ BOD</button></div>
+       <div class="quick-actions"><button data-action="timeout" data-team="${i}" ${disabled||t.timeouts>=2?'disabled':''} class="${t.timeouts>=2?'at-limit':''}" aria-label="Pridať oddychový čas ${esc(username(i))}"><span>TIME-OUT</span><strong class="stat-count">${t.timeouts}<small> / 2</small></strong></button><button data-action="sub" data-team="${i}" ${disabled||t.subs>=S.subLimit?'disabled':''} class="${t.subs>=S.subLimit?'at-limit':''}" aria-label="Pridať striedanie ${esc(username(i))}"><span>STRIEDANIA</span><strong class="stat-count">${t.subs}<small> / ${S.subLimit}</small></strong></button></div>
+       <div class="score-sub"><span style="color:#94abc5">SETY ${S.sets[i]}</span><span class="cap-mini">C #${esc(t.captain||'–')}</span></div>
+     </div>`;}
+    function visualPlayer(ti,pos){let num=jerseyAt(ti,pos),t=S.teams[ti],c=t.captain!==''&&String(num)===String(t.captain),serve=S.serving===ti&&pos===1;
+      return `<div class="player-circle ${serve?'serving-position':''}" aria-label="Pozícia ${pos}, číslo ${esc(num)}${c?', kapitánka':''}"><span class="pos-index">${pos}</span><span class="jersey-big">${esc(num)}</span>${c?'<span class="captain-mark">C</span>':''}${serve?'<span class="serve-mark">●</span>':''}</div>`;}
+    function courtHalf(ti,isLeft){const t=S.teams[ti],line=isLeft?[5,4,6,3,1,2]:[2,1,3,6,4,5];return `<section class="field-half ${ti===1?'orange':''} ${isLeft?'left':'right'}" aria-label="${isLeft?'Ľavé':'Pravé'} ihrisko ${esc(username(ti))}">
+      <div class="side-header"><span class="side-title">${esc(username(ti))}</span><span class="side-caption">${S.serving===ti?'● PODANIE':'C #'+esc(t.captain||'–')}</span><button data-action="editTeam" data-team="${ti}" title="Opraviť postavenie">✎</button></div>
+      <div class="player-grid">${line.map(p=>visualPlayer(ti,p)).join('')}</div>
+    </section>`}
+    function render(){
+      if(introActive || !S.started){setupScreen();return}
+      document.body.classList.remove('setup-mode');$('#app').classList.add('live');
+      const left=S.sideSwapped?1:0,right=1-left;
+      $('#app').innerHTML=`<header><div class="brand brand--compact">${avrBadge()}<div><h1>VOLLEY REF</h1><div class="mini-line">POHĽAD Z EMPAJRU</div></div></div>
+       <div class="head-center">SET <strong>${S.setNo} <span style="color:#7999bf;font-size:12px">·</span> ${S.sets[0]}:${S.sets[1]}</strong></div>
+       <div class="tools"><button class="iconbtn small" data-action="fullscreen" aria-label="Celá obrazovka" title="Celá obrazovka">⛶</button><button class="iconbtn small" data-action="settings" aria-label="Nastavenia" title="Nastavenia">⚙</button></div></header>
+       <div class="match-main"><div class="score-row">${liveScore(0)}${liveScore(1)}</div><div class="field-main">${courtHalf(left,true)}<div class="court-net"><span>SIEŤ</span></div>${courtHalf(right,false)}</div></div>
+       <div class="last-action" title="${esc(S.lastAction)}">${esc(S.lastAction)}</div>`;
+      $('#footer').innerHTML=`<button class="outline" data-action="undo" ${undoStack.length?'':'disabled'}>↶ SPÄŤ</button><button data-action="history">HISTÓRIA</button>
+       ${S.setWinner!==null&&!S.matchOver?'<button class="primary" data-action="next">ĎALŠÍ SET →</button>':S.matchOver?'<button class="primary" data-action="settings">KONIEC / EXPORT</button>':'<button class="primary" data-action="more">OPRAVY ⚙</button>'}`;
+    }
+    function openModal(title,content,footer=''){const el=$('#overlay');el.innerHTML=`<div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-top"><h2>${esc(title)}</h2><button type="button" class="xbtn" data-action="close" aria-label="Zavrieť">×</button></div><div class="modal-body">${content}</div>${footer?`<div class="modal-actions">${footer}</div>`:''}</div>`;el.classList.add('shown');el.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+    function closeModal(){const el=$('#overlay');el.classList.remove('shown');el.setAttribute('aria-hidden','true');el.innerHTML='';document.body.style.overflow=''}
+    function teamForm(ti,nums,cap,name){return `<section class="teamsetup"><h3>${ti===0?'MODRÉ':'ORANŽOVÉ'} DRUŽSTVO</h3><div class="field"><label for="name${ti}">Názov tímu</label><input id="name${ti}" name="name${ti}" value="${esc(name)}" maxlength="25" required></div>
+      <div class="field"><label for="cap${ti}">Číslo kapitánky (C)</label><input id="cap${ti}" name="cap${ti}" inputmode="numeric" type="number" min="0" max="99" placeholder="voliteľné" value="${esc(cap)}"></div>
+      <div class="help" style="margin:0 0 7px;font-size:10px">Zadaj čísla hráčok podľa ich skutočných pozícií na začiatku setu.</div>
+      <div class="lineupgrid">${positions.map(p=>`<div class="field"><label for="p${ti}_${p}">Poz. ${p}</label><input id="p${ti}_${p}" name="p${ti}_${p}" inputmode="numeric" type="number" min="0" max="99" required value="${esc(nums[p-1]??'')}"></div>`).join('')}</div>${photoControls(ti)}</section>`}
+    function setupModal(next=false){if(next && S.matchOver)return;let best=next?S.bestOf:5, sub=next?S.subLimit:S.subLimit;
+      const tm=next?S.teams.map(t=>t.starterLineup):[[],[]];let first=next?(1-S.firstServeOfSet):S.serving;
+      const last=next&&S.setNo+1===S.bestOf;
+      openModal(next?'Základné postavenie – nový set':'Nový volejbalový zápas',`<form id="setupForm" data-next="${next?'1':'0'}">
+        ${next?`<div class="notice">Začína <strong>set ${S.setNo+1}</strong>. Over nové základné postavenie oboch družstiev. Počítače time-outov a striedaní sa vynulujú.</div>`:
+        `<div class="formgrid"><div class="field"><label for="bestOf">Typ zápasu</label><select name="bestOf" id="bestOf"><option value="5">Na 3 víťazné sety</option><option value="3">Na 2 víťazné sety</option></select></div><div class="field"><label for="subLimit">Limit striedaní</label><select name="subLimit" id="subLimit"><option value="6">6 / set (štandard)</option><option value="8">8 / set (vybrané súťaže)</option></select></div></div>`}
+        <div class="formgrid">${S.teams.map((t,i)=>teamForm(i, next?tm[i]:(S.started?t.starterLineup:[]),t.captain,t.name)).join('')}</div>
+        <div class="fieldset"><h3>Prvé podanie ${last?'(rozhodujúci set – podľa žrebu)':''}</h3>
+          <div class="formgrid"><div class="field"><label for="firstServe">Podáva ako prvé</label><select id="firstServe" name="firstServe"><option value="0" ${first===0?'selected':''}>${esc(username(0))}</option><option value="1" ${first===1?'selected':''}>${esc(username(1))}</option></select></div>
+          ${next?`<div class="field"><label for="sideFlip">Strany ihriska</label><select name="sideFlip" id="sideFlip"><option value="1" selected>Vymeniť strany</option><option value="0">Ponechať strany</option></select></div>`:'<div class="info" style="align-self:center">Domáci sú na začiatku vľavo.</div>'}</div>
+        </div><div class="help">Postavenie je evidované v rotačných pozíciách. Čísla na dresoch musia byť v každom tíme unikátne. Libero výmeny sa nezapočítavajú do striedaní.</div>
+        <button type="submit" id="setupSubmit" class="hidden">Uložiť</button></form>`,
+        `<button type="button" data-action="close">ZRUŠIŤ</button><button class="submit" type="button" data-action="submitSetup">${next?'SPUSTIŤ SET':'ZAČAŤ ZÁPAS'}</button>`);
+      if(!next){$('#bestOf').value=String(S.bestOf);$('#subLimit').value=String(sub)}
+      $('#firstServe').value=String(first);
+    }
+    function validNum(x){return /^\d{1,2}$/.test(String(x))&&Number(x)>=0&&Number(x)<=99}
+    function getSetup(form){const parsed=[];
+      for(let i=0;i<2;i++){const name=form['name'+i]?.value.trim()||'';if(!name)throw Error('Doplň názov oboch družstiev.');
+        const numByPos=Array.from({length:6},(_,k)=>form['p'+i+'_'+(k+1)]?.value.trim()||'');
+        if(numByPos.some(v=>!validNum(v)))throw Error('V tíme '+name+' zadaj šesť platných čísiel (0–99).');
+        const normalized=numByPos.map(v=>String(Number(v)));
+        if(new Set(normalized).size<6)throw Error('V tíme '+name+' sa opakujú čísla hráčok.');
+        let cap=form['cap'+i]?.value.trim()||'';if(cap&&!validNum(cap))throw Error('Neplatné číslo kapitánky v tíme '+name+'.');
+        if(cap)cap=String(Number(cap));
+        parsed.push({name,nums:normalized,cap});}
+      return parsed;
+    }
+    function submitSetup(){const f=$('#setupForm');if(!f)return;try{const parsed=getSetup(f),next=f.dataset.next==='1';
+      // Form button itself is explicit confirmation to start. Android WebView without
+      // a WebChromeClient silently dismisses window.confirm(), blocking second match.
+      // Keep the saved game intact until every form field has been validated.
+      let best=next?S.bestOf:Number(f.bestOf.value),sub=next?S.subLimit:Number(f.subLimit.value);
+      const serving=Number(f.firstServe.value),flip=next&&f.sideFlip.value==='1';const leftTeam=next?null:Number(f.bottomTeam.value);
+      snapshot();if(next){S.setHistory.push({set:S.setNo,score:S.scores.slice(),winner:S.setWinner,firstServe:S.firstServeOfSet});S.setNo++;S.scores=[0,0];S.sideSwapped=flip?!S.sideSwapped:S.sideSwapped;S.decidingSwitched=false;S.setWinner=null;S.matchOver=false;}
+      else{let fresh=initial();fresh.bestOf=best;fresh.subLimit=sub;S=fresh;undoStack=[]}
+      S.teams=parsed.map((p,i)=>({name:p.name,captain:p.cap,liberos:rosterMeta[i].liberos||'',roster:photoRosters[i],playerNames:rosterMeta[i].players||'',slots:p.nums.map(n=>({num:n,starter:n,reserve:null,returned:false})),starterLineup:p.nums.slice(),usedSubs:[],timeouts:0,subs:0}));
+      S.serving=serving;S.firstServeOfSet=serving;S.started=true;if(!next)S.sideSwapped=leftTeam===1;
+      introActive=false;
+      commit(`Set ${S.setNo} spustený. Prvé podanie: ${username(serving)} #${jerseyAt(serving,1)}.`,serving);closeModal();toast('Zápas pripravený. Rotácia je automatická.');
+    }catch(e){toast(e.message)}}
+    function rotate(ti){let sl=S.teams[ti].slots;S.teams[ti].slots=[sl[1],sl[2],sl[3],sl[4],sl[5],sl[0]]}
+    function addPoint(ti){if(!S.started)return setupModal();if(S.setWinner!==null)return toast('Set už skončil. Pokračuj ďalším setom.');
+      snapshot();let sideout=S.serving!==ti;S.scores[ti]++;if(sideout)rotate(ti);S.serving=ti;
+      let desc=`BOD ${username(ti)} → ${S.scores[0]}:${S.scores[1]}`+(sideout?` · získané podanie, ROTÁCIA · servíruje #${jerseyAt(ti,1)}`:' · podáva tá istá hráčka');
+      let sideChange=false;if(deciding()&&!S.decidingSwitched&&Math.max(...S.scores)>=8){S.sideSwapped=!S.sideSwapped;S.decidingSwitched=true;sideChange=true;desc+=' · VÝMENA STRÁN';}
+      const win=winnerAtScore();if(win!==null){S.setWinner=win;S.sets[win]++;S.matchOver=S.sets[win]>=Math.ceil(S.bestOf/2);desc+=S.matchOver?' · KONIEC ZÁPASU':' · KONIEC SETU';}
+      commit(desc,ti,{type:'point',sideout,rotated:sideout,sideChange});if(sideChange)toast('VÝMENA STRÁN v rozhodujúcom sete – pozície zachované');
+      else if(win!==null)toast(S.matchOver?'Zápas skončil.':'Set skončil – pokračuj ďalším setom.');
+    }
+    function takeTimeout(ti){const t=S.teams[ti];if(!S.started||S.setWinner!==null)return;if(t.timeouts>=2)return toast('Limit 2 time-outov je vyčerpaný.');snapshot();t.timeouts++;commit(`TIME-OUT ${username(ti)} (${t.timeouts}/2)`,ti,{type:'timeout'});if(t.timeouts===2)toast(username(ti)+': oba time-outy vyčerpané');}
+    function countSub(ti){
+      if(!S.started || S.setWinner!==null)return;
+      const t=S.teams[ti];
+      if(t.subs>=S.subLimit)return toast('Limit striedaní je vyčerpaný.');
+      snapshot();t.subs++;
+      commit(`STRIEDANIE ${username(ti)} (${t.subs}/${S.subLimit})`,ti,{type:'substitutionCount'});
+      if(t.subs===S.subLimit)toast(username(ti)+': vyčerpaný limit striedaní.');
+    }
+    function undo(){if(!undoStack.length)return toast('Žiadna akcia na vrátenie.');S=undoStack.pop();save();render();toast('Posledná akcia bola vrátená.');}
+    function settingsModal(){openModal('Nastavenia a údaje',`<div class="help">VOLLEY REF ukladá zápas do tohto zariadenia a funguje bez internetu. Zobrazenie originálnej webovej ikony AVR závisí od internetu. Oficiálny zápis má vždy prednosť.</div>
+      <div class="fieldset"><h3>Konfigurácia</h3><table class="rules-table"><tr><td>Počet setov</td><td>${S.bestOf===5?'na 3 víťazné':'na 2 víťazné'}</td></tr><tr><td>Striedania / set</td><td>${S.subLimit}</td></tr><tr><td>Time-outy / set</td><td>2</td></tr><tr><td>Automatická rotácia</td><td>zapnutá</td></tr><tr><td>Striedania</td><td>iba počet, bez čísiel hráčok</td></tr></table></div>
+      <div class="fieldset"><h3>Obrazovka telefónu</h3><button class="litebtn" data-action="wake">☼ ${wakeLock?'Vypnúť':'Zapnúť'} nevypínanie displeja</button><p class="info">Funkcia závisí od podpory prehliadača; zapnúť pri každom otvorení aplikácie.</p></div>
+      <div class="fieldset"><h3>Export / záloha</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="litebtn" data-action="exportCsv">Export udalostí CSV</button><button class="litebtn" data-action="exportJson">Záloha JSON</button><label class="litebtn" style="cursor:pointer">Obnoviť JSON<input id="importJson" type="file" accept=".json,application/json" class="hidden" /></label></div></div>
+      <div class="fieldset"><h3>Nový zápas</h3><button class="litebtn" style="border-color:#b45861;color:#ffd7dc" data-action="newMatch">Vymazať aktuálny zápas a začať nový</button></div>
+      <p class="info">Poznámka: pri niektorých súťažiach platia iné pravidlá. Limit 8 striedaní vyber len vtedy, ak to povoľuje rozpis alebo pravidlá súťaže. Program nie je oficiálny elektronický zápis.</p>`,
+      '<button data-action="close">ZAVRIEŤ</button><button class="submit" data-action="more">NÁSTROJE</button>');}
+    function toolsModal(){openModal('Nástroje počas zápasu',`<div class="help">Opravy nižšie menia evidenciu, nie sú skutočným bodom ani striedaním.</div>
+      <div class="fieldset"><h3>Podanie</h3><div class="formgrid"><button class="litebtn" data-action="fixServe" data-team="0">Podanie: ${esc(username(0))}</button><button class="litebtn" data-action="fixServe" data-team="1">Podanie: ${esc(username(1))}</button></div></div>
+      <div class="fieldset"><h3>Strany ihriska</h3><button class="litebtn" data-action="swapSides">⇄ Vymeniť strany (bez rotácie)</button></div>
+      <div class="fieldset"><h3>Korekcia skóre</h3><div class="formgrid"><div class="field"><label>${esc(username(0))}</label><input type="number" min="0" max="150" id="score0" value="${S.scores[0]}" inputmode="numeric"></div><div class="field"><label>${esc(username(1))}</label><input type="number" min="0" max="150" id="score1" value="${S.scores[1]}" inputmode="numeric"></div></div>
+      <button class="litebtn" data-action="fixScore">Uložiť korekciu skóre</button><p class="info">Korekcia skóre neotáča hráčky. Skontroluj podávajúce družstvo a rotáciu.</p></div>
+      <div class="fieldset"><h3>Postavenie a kapitánka</h3><div class="formgrid"><button class="litebtn" data-action="editTeam" data-team="0">Upraviť ${esc(username(0))}</button><button class="litebtn" data-action="editTeam" data-team="1">Upraviť ${esc(username(1))}</button></div></div>
+      <div class="fieldset"><h3>Ďalšie</h3><button class="litebtn" data-action="history">Zobraziť históriu</button> <button class="litebtn" data-action="settings">Nastavenia / export</button></div>`,
+      '<button data-action="close">HOTOVO</button>');}
+    function editTeam(ti){if(!S.started)return setupModal();const t=S.teams[ti];openModal('Oprava postavenia – '+username(ti),`<div class="message">Zmena čísla v postavení sa nepočíta ako striedanie. Evidenciu striedaní mení iba tlačidlo STRIEDANIE. Počet striedaní zostane zachovaný.</div>
+      <form id="editForm"><input type="hidden" name="team" value="${ti}"><div class="field"><label for="rename">Názov družstva</label><input id="rename" name="rename" maxlength="25" value="${esc(t.name)}"></div>
+      <div class="field"><label for="captain">Kapitánka (číslo dresu)</label><input id="captain" name="captain" type="number" min="0" max="99" value="${esc(t.captain)}"></div>
+      <div class="lineupgrid">${positions.map(p=>`<div class="field"><label for="ep${p}">Pozícia ${p}</label><input id="ep${p}" name="ep${p}" type="number" inputmode="numeric" min="0" max="99" required value="${esc(jerseyAt(ti,p))}"></div>`).join('')}</div></form>`,
+      `<button data-action="close">ZRUŠIŤ</button><button class="submit" data-action="saveTeam">ULOŽIŤ OPRAVU</button>`);}
+    function saveTeam(){const f=$('#editForm');if(!f)return;const i=Number(f.team.value),t=S.teams[i];const newNums=Array.from({length:6},(_,p)=>f['ep'+(p+1)].value.trim());
+      if(newNums.some(x=>!validNum(x)))return toast('Zadaj šesť čísiel hráčok (0–99).');let nums=newNums.map(x=>String(Number(x)));if(new Set(nums).size!==6)return toast('Čísla hráčok sa opakujú.');
+      let cap=f.captain.value.trim();if(cap&&!validNum(cap))return toast('Neplatné číslo kapitánky.');const renamed=f.rename.value.trim();if(!renamed)return toast('Názov družstva nesmie byť prázdny.');
+      // Preserve chain if the jersey is unchanged. A corrected jersey is attributed to the active player in that slot.
+      snapshot();t.name=renamed;t.captain=cap?String(Number(cap)):'';
+      for(let p=0;p<6;p++){let slot=t.slots[p],num=nums[p];if(num===slot.num)continue;if(slot.num===slot.starter){t.starterLineup=t.starterLineup.map(v=>v===slot.starter?num:v);slot.starter=num}
+        else{t.usedSubs=t.usedSubs.map(v=>v===slot.reserve?num:v);slot.reserve=num}slot.num=num;}
+      commit('Oprava evidencie postavenia '+username(i),i,{type:'manualCorrection'});closeModal();toast('Postavenie upravené. Skontroluj podanie.');}
+    function fixServe(ti){if(S.serving===ti)return toast('Družstvo už podáva.');snapshot();S.serving=ti;commit('Oprava podania: '+username(ti),ti,{type:'manualServe'});closeModal()}
+    function swapSides(){snapshot();S.sideSwapped=!S.sideSwapped;commit('Ručná výmena strán (pozície bez zmeny)',null,{type:'manualSides'});closeModal()}
+    function fixScore(){const a=Number($('#score0')?.value),b=Number($('#score1')?.value);if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>150||b>150)return toast('Zadaj platné skóre 0–150.');
+      if(S.setWinner!==null)return toast('Korekciu po skončení setu vykonaj cez SPÄŤ.');snapshot();S.scores=[a,b];
+      const w=winnerAtScore();if(w!==null){S.setWinner=w;S.sets[w]++;S.matchOver=S.sets[w]>=Math.ceil(S.bestOf/2)}
+      commit('Ručná korekcia skóre '+a+':'+b+' – skontroluj rotáciu a podanie',null,{type:'manualScore'});closeModal()}
+    function historyModal(){let logs=S.log.slice(-80).reverse();openModal('História akcií',`<div class="help">Posledných ${logs.length} udalostí. Tlačidlo SPÄŤ vráti jednu akciu aj jej rotáciu.</div>
+      <div style="display:grid;gap:7px">${logs.length?logs.map(e=>`<div style="background:#1a3457;border-radius:9px;padding:9px;font-size:12px"><span class="pill">Set ${e.set}</span> <span style="color:var(--muted)">${esc((e.at||'').slice(11,16))}</span> ${esc(e.action)}</div>`).join(''):'Zatiaľ žiadne udalosti.'}</div>`,
+      '<button data-action="close">ZAVRIEŤ</button><button class="submit" data-action="exportCsv">EXPORT CSV</button>')}
+    function download(name,data,type){const blob=new Blob([data],{type});const href=URL.createObjectURL(blob);let a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(href);a.remove()},2500)}
+    function exportCsv(){const rows=[['Datum_a_cas','Set','Skore_A','Skore_B','Akcia','Tim'],...S.log.map(e=>[e.at,e.set,e.score?.[0]??'',e.score?.[1]??'',e.action,e.team===null?'':e.team===undefined?'':username(e.team)])];
+      const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');download(`VOLLEY_REF_${new Date().toISOString().slice(0,10)}.csv`,csv,'text/csv;charset=utf-8');toast('CSV exportované.');}
+    function exportJson(){download(`VOLLEY_REF_ZALOHA_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:'VOLLEY REF',state:S,undo:undoStack},null,2),'application/json');toast('Záloha JSON uložená.');}
+    async function importJson(file){if(!file)return;try{const raw=JSON.parse(await file.text());if(raw?.app!=='VOLLEY REF'||raw?.state?.version!==1||raw.state.teams?.length!==2)throw Error('Nesprávny súbor zálohy.');
+      S=raw.state;undoStack=Array.isArray(raw.undo)?raw.undo.slice(-60):[];introActive=false;save();closeModal();render();toast('Záloha obnovená.');}catch(e){toast('Obnova zlyhala: '+e.message)}}
+    let wakeLock=null;
+    async function toggleWake(){if(wakeLock){try{await wakeLock.release()}catch(e){}wakeLock=null;toast('Nevypínanie displeja vypnuté.');settingsModal();return}
+      try{if(!('wakeLock' in navigator))throw Error('Prehliadač nepodporuje funkciu.');wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null});toast('Displej zostane zapnutý (pokým je aplikácia aktívna).');settingsModal();}
+      catch(e){toast('Nevypínanie displeja nie je dostupné. Použi nastavenie telefónu.')}}
+    document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&wakeLock===null){/* no implicit reactivation without explicit user request */}});
+    document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const action=b.dataset.action,ti=Number(b.dataset.team||0);
+      switch(action){case 'photoLineup':photoDialog(ti,'lineup');break;case 'photoRoster':photoDialog(ti,'roster');break;case 'runPhotoOcr':runPhotoOcr();break;case 'applyPhoto':applyPhoto();break;case 'point':addPoint(ti);break;case 'timeout':takeTimeout(ti);break;case 'sub':countSub(ti);break;
+      case 'undo':undo();break;case 'resume':if(S.started){introActive=false;render();}break;case 'setup':setupModal();break;case 'next':setupModal(true);break;case 'close':closeModal();break;
+      case 'submitSetup':submitSetup();break;case 'settings':settingsModal();break;case 'more':toolsModal();break;
+      case 'editTeam':editTeam(ti);break;case 'saveTeam':saveTeam();break;case 'fixServe':fixServe(ti);break;
+      case 'swapSides':swapSides();break;case 'fixScore':fixScore();break;case 'history':historyModal();break;
+      case 'exportCsv':exportCsv();break;case 'exportJson':exportJson();break;case 'wake':toggleWake();break;
+      case 'fullscreen':if(document.fullscreenElement)document.exitFullscreen?.();else document.documentElement.requestFullscreen?.().catch(()=>toast('Celá obrazovka nie je dostupná.'));break;
+      case 'newMatch':introActive=true;closeModal();render();toast('Zadaj postavenie a stlač SPUSTIŤ NOVÝ ZÁPAS.');break;
+      }
+    });
+    document.addEventListener('submit',e=>{if(e.target.id==='setupForm'){e.preventDefault();submitSetup()}if(e.target.id==='editForm'){e.preventDefault();saveTeam()}});
+    document.addEventListener('change',e=>{if(e.target.id==='photoFile'){const img=document.getElementById('photoPreview');if(photoUrl)URL.revokeObjectURL(photoUrl);if(img&&e.target.files?.[0]){photoUrl=URL.createObjectURL(e.target.files[0]);img.src=photoUrl;img.style.display='block';runPhotoOcr()}}if(e.target.id==='importJson')importJson(e.target.files?.[0]);
+      if(e.target.id==='bottomTeam'){
+        const pair=document.querySelector('.setup-pair');if(!pair)return;
+        const values={};pair.querySelectorAll('input').forEach(input=>values[input.id]=input.value);
+        const left=Number(e.target.value),right=1-left;
+        pair.innerHTML=setupTeamCard(left,true)+setupTeamCard(right,false);
+        pair.querySelectorAll('input').forEach(input=>{if(Object.hasOwn(values,input.id))input.value=values[input.id]});
+      }
+    });
+    document.addEventListener('input',e=>{if(e.target.id==='name0'||e.target.id==='name1'){const f=$('#setupForm');if(!f)return;for(const select of [f.firstServe,f.bottomTeam]){if(select){const idx=Number(e.target.id.slice(-1));select.options[idx].text=e.target.value.trim()||(idx===0?'DOMÁCI':'HOSTIA')}}}});
+    window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#overlay').classList.contains('shown'))closeModal()});
+    render();
+    
+    window.VOLLEY_REF_TEST={getState:()=>copy(S),addPoint,undo,rotate,setupModal,takeTimeout,countSub,swapSides};
+  })();
+  </script>
+</body>
+</html>
