@@ -1,0 +1,40 @@
+name: Build VOLLEY SOUND APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'volley-sound/android/**'
+      - '.github/workflows/build-volley-sound.yml'
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build Android APK
+        run: gradle --no-daemon --project-dir volley-sound/android assembleDebug
+      - name: Prepare APK
+        run: cp volley-sound/android/app/build/outputs/apk/debug/app-debug.apk VOLLEY_SOUND.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VOLLEY_SOUND_APK
+          path: VOLLEY_SOUND.apk
+          if-no-files-found: error
+      - name: Publish downloadable APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view volley-sound-v1 >/dev/null 2>&1; then
+            gh release upload volley-sound-v1 VOLLEY_SOUND.apk --clobber
+          else
+            gh release create volley-sound-v1 VOLLEY_SOUND.apk --title "VOLLEY SOUND 1.0" --notes "Volejbalová Android aplikácia: ACE, SPIKE, MONSTER, vlastné MP3, offline ukladanie a vlastný názov klubu." --latest=false
+          fi
